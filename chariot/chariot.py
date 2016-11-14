@@ -1,54 +1,18 @@
 #!/bin/python
 # -*- coding: utf-8 -*-
 from __future__ import division
-import sys
 import os
 
 import boto
 import gzip
-import logging
 import psycopg2
-import math
 
 from boto.s3.key import Key
 from retrying import retry
 from subprocess import check_call, CalledProcessError
 from data_to_redshift import EXPORT_TABLES_DEV
-
-# posgtres credentials
-DB_USER = ''
-DB_Name = ''
-DB_HOST = ''
-PASSWORD = ''
-
-# aws s3 credentials
-AWS_ACCESS_KEY = ''
-AWS_SECRET_KEY = ''
-AWS_REGION = 'eu-central-1'
-
-# aws redshift db credentials
-RDB_USER = ''
-RD_NAME = ''
-R_HOST = ''
-R_PASSWORD = ''
-R_PORT = '5439'
-# other
-CSV_OUTPUT_DIR = 'csv_dir'
-GZIP_OUTPUT_DIR = 'gzip_dir'
-
-
-def init_logger():
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-    fh = logging.FileHandler('/tmp/prdshift.log')
-    console = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter('[%(asctime)s]-%(levelname)s-%(message)s',
-                                  datefmt='%a, %d %b %Y %H:%M:%S')
-    fh.setFormatter(formatter)
-    console.setFormatter(formatter)
-    logger.addHandler(fh)
-    logger.addHandler(console)
-    return logger
+from .settings import *
+from utils import init_logger
 
 
 def get_s3_connection():
@@ -162,10 +126,6 @@ def s3_to_redshift(tablename, query_type, staging_query, chain_id, s3path):
     cur.execute(copy_query)
     conn.commit()
     log.info('COPY table %s successfull' % tablename)
-    upsert_query = """{};""".format(staging_query)
-    cur.execute(upsert_query)
-    conn.commit()
-    log.info('UPSERT table %s successfull' % tablename)
     conn.close()
 
 
@@ -206,5 +166,3 @@ def run(chain_id):
         break
     conn.close()
     s3_conn.close()
-
-if __name__ == '__main__':
