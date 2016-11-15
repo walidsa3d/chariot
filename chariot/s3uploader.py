@@ -53,8 +53,20 @@ class S3Uploader(object):
             res = pool.apply_async(self.upload_file, args=(fname, fpath, bucket_name))
         return res.get()
 
-    def multi_upload(self):
-        pass
+    def multi_upload(self, bucket, filename, filepath):
+        MAX_SIZE = 5*1000*1000*1000
+        PART_SIZE = 500*1000*1000
+        filesize = os.path.getsize(filepath)
+        if filesize > MAX_SIZE:
+            print "multipart upload"
+            mp = bucket.initiate_multipart_upload(filename)
+            fp = open(filepath, 'rb')
+            fp_num = 0
+            while (fp.tell() < filesize):
+                fp_num += 1
+                print "uploading part %i" % fp_num
+                mp.upload_part_from_file(fp, fp_num, size=PART_SIZE)
+            mp.complete_upload()
 
     def create_bucket(self, bucket_name):
         pass
